@@ -1,0 +1,10 @@
+0.0.2
+-----
+Upgraded things to a proper pip-installable project.
+Added tests.
+Factored NaturalCubicSpline apart into natural_cubic_spline_coeffs and NaturalCubicSpline, so that using splines is easier with PyTorch's functionality with things like DataLoaders.
+
+0.0.1
+-----
+This version wasn't actually even labelled! But since we're making an update then I might as well label it now.
+This version introduced the NaturalCubicSpline class.
