@@ -5,24 +5,38 @@ import torchcubicspline
 # Represents a random natural cubic spline with a single knot in the middle
 class _Cubic:
     def __init__(self, batch_dims, num_channels, start, end):
-        self.a = torch.randn(*batch_dims, 1, num_channels, dtype=torch.float64) * 10
-        self.b = torch.randn(*batch_dims, 1, num_channels, dtype=torch.float64) * 10
-        self.c = torch.randn(*batch_dims, 1, num_channels, dtype=torch.float64) * 10
+        self.a = torch.randn(*batch_dims, num_channels, dtype=torch.float64) * 10
+        self.b = torch.randn(*batch_dims, num_channels, dtype=torch.float64) * 10
+        self.c = torch.randn(*batch_dims, num_channels, dtype=torch.float64) * 10
         self.d1 = -self.c / (3 * start)
         self.d2 = -self.c / (3 * end)
 
-    def evaluate(self, t):
+    def _normalise_dims(self, t):
+        a = self.a
+        b = self.b
+        c = self.c
+        d1 = self.d1
+        d2 = self.d2
+        for _ in t.shape:
+            a = a.unsqueeze(-2)
+            b = b.unsqueeze(-2)
+            c = c.unsqueeze(-2)
+            d1 = d1.unsqueeze(-2)
+            d2 = d2.unsqueeze(-2)
         t = t.unsqueeze(-1)
+        d = torch.where(t > 0, d2, d1)
+        return a, b, c, d, t
+
+    def evaluate(self, t):
+        a, b, c, d, t = self._normalise_dims(t)
         t_sq = t ** 2
         t_cu = t_sq * t
-        d = torch.where(t > 0, self.d2, self.d1)
-        return self.a + self.b * t + self.c * t_sq + d * t_cu
+        return a + b * t + c * t_sq + d * t_cu
 
     def derivative(self, t):
-        t = t.unsqueeze(-1)
+        a, b, c, d, t = self._normalise_dims(t)
         t_sq = t ** 2
-        d = torch.where(t > 0, self.d2, self.d1)
-        return self.b + 2 * self.c * t + 3 * d * t_sq
+        return b + 2 * c * t + 3 * d * t_sq
 
 
 def test_interp():
@@ -44,7 +58,7 @@ def test_interp():
                     num_drop = int(num_points * torch.randint(low=1, high=4, size=(1,)).item() / 10)
                     num_drop = min(num_drop, num_points - 4)
                     to_drop = torch.randperm(num_points - 2)[:num_drop] + 1  # don't drop first or last
-                    values_slice[to_drop] = float('nan')
+                    values_slice[..., to_drop] = float('nan')
             coeffs = torchcubicspline.natural_cubic_spline_coeffs(times, values)
             spline = torchcubicspline.NaturalCubicSpline(coeffs)
             _test_equal(batch_dims, num_channels, cubic, spline)
@@ -124,8 +138,8 @@ def test_specification():
                 batch_dims.append(torch.randint(low=1, high=3, size=(1,)).item())
             length = torch.randint(low=5, high=10, size=(1,)).item()
             channels = torch.randint(low=1, high=5, size=(1,)).item()
-            t = torch.linspace(0, 1, length)
-            x = torch.rand(*batch_dims, length, channels)
+            t = torch.linspace(0, 1, length, dtype=torch.float64)
+            x = torch.rand(*batch_dims, length, channels, dtype=torch.float64)
             coeffs = torchcubicspline.natural_cubic_spline_coeffs(t, x)
             spline = torchcubicspline.NaturalCubicSpline(coeffs)
             for i, point in enumerate(t):
