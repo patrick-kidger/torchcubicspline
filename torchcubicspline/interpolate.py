@@ -288,9 +288,26 @@ class NaturalCubicSpline:
         inner = self._b[..., index, :] + inner * fractional_part
         return self._a[..., index, :] + inner * fractional_part
 
-    def derivative(self, t):
-        fractional_part, index = self._interpret_t(t)
-        fractional_part = fractional_part.unsqueeze(-1)
-        inner = 2 * self._c[..., index, :] + 3 * self._d[..., index, :] * fractional_part
-        deriv = self._b[..., index, :] + inner * fractional_part
-        return deriv
+        def derivative(self, t, order):
+        """Evaluate cubicspline derivative for given order and samples."""
+        if order == 1:
+            fractional_part, index = self._interpret_t(t)
+            fractional_part = fractional_part.unsqueeze(-1)
+            inner = (
+                2 * self._c[..., index, :]
+                + 3 * self._d[..., index, :] * fractional_part
+            )
+            return self._b[..., index, :] + inner * fractional_part
+
+        if order == 2:
+            fractional_part, index = self._interpret_t(t)
+            fractional_part = fractional_part.unsqueeze(-1)
+            inner = 6 * self._d[..., index, :]
+            return 2 * self._c[..., index, :] + inner * fractional_part
+
+        if order == 3:
+            fractional_part, index = self._interpret_t(t)
+            fractional_part = fractional_part.unsqueeze(-1)
+            return 6 * self._d[..., index, :]
+
+        raise ValueError("Order is out of bounds")
