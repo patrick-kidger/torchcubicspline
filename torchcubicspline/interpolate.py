@@ -287,9 +287,14 @@ class NaturalCubicSpline:
         inner = self._b[..., index, :] + inner * fractional_part
         return self._a[..., index, :] + inner * fractional_part
 
-    def derivative(self, t):
+    def derivative(self, t, order=1):
         fractional_part, index = self._interpret_t(t)
         fractional_part = fractional_part.unsqueeze(-1)
-        inner = 2 * self._c[..., index, :] + 3 * self._d[..., index, :] * fractional_part
-        deriv = self._b[..., index, :] + inner * fractional_part
+        if order == 1:
+            inner = 2 * self._c[..., index, :] + 3 * self._d[..., index, :] * fractional_part
+            deriv = self._b[..., index, :] + inner * fractional_part
+        elif order == 2:
+            deriv = 2 * self._c[..., index, :] + 6 * self._d[..., index, :] * fractional_part
+        else:
+            raise ValueError('Derivative is not implemented for orders greater than 2.')
         return deriv

@@ -33,10 +33,13 @@ class _Cubic:
         t_cu = t_sq * t
         return a + b * t + c * t_sq + d * t_cu
 
-    def derivative(self, t):
+    def derivative(self, t, order=1):
         a, b, c, d, t = self._normalise_dims(t)
         t_sq = t ** 2
-        return b + 2 * c * t + 3 * d * t_sq
+        if order == 1:
+            return b + 2 * c * t + 3 * d * t_sq
+        elif order == 2:
+            return 2 * c + 6 * d * t
 
 
 def test_interp():
@@ -75,14 +78,19 @@ def _test_equal(batch_dims, num_channels, obj1, obj2):
         eval_times = torch.rand(sizes, dtype=torch.float64) * 3 - 1.5
         obj1_evaluate = obj1.evaluate(eval_times)
         obj2_evaluate = obj2.evaluate(eval_times)
-        obj1_derivative = obj1.derivative(eval_times)
-        obj2_derivative = obj2.derivative(eval_times)
+        obj1_derivative = obj1.derivative(eval_times, order=1)
+        obj2_derivative = obj2.derivative(eval_times, order=1)
+        obj1_second_derivative = obj1.derivative(eval_times, order=2)
+        obj2_second_derivative = obj2.derivative(eval_times, order=2)
         assert obj1_evaluate.shape == expected_size
         assert obj2_evaluate.shape == expected_size
         assert obj1_derivative.shape == expected_size
         assert obj2_derivative.shape == expected_size
+        assert obj1_second_derivative.shape == expected_size
+        assert obj2_second_derivative.shape == expected_size
         assert obj1_evaluate.allclose(obj2_evaluate)
         assert obj1_derivative.allclose(obj2_derivative)
+        assert obj1_second_derivative.allclose(obj2_second_derivative, atol=1e-4, rtol=1e-3)
 
 
 def test_example1():
