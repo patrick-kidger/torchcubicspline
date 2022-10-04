@@ -49,7 +49,10 @@ classifiers = ["Development Status :: 3 - Alpha",
 
 python_requires = ">=3.5, <4"
 
-install_requires = ['torch>=1.5.0']
+install_requires = [
+    'torch>=1.5.0', 
+    'numpy',
+]
 
 setuptools.setup(name=name,
                  version=version,
